@@ -1,0 +1,17 @@
+{
+  "providers": {
+    "freellmpool": { "baseUrl": "http://127.0.0.1:8897/v1", "model": "llm7/codestral-latest", "apiKey": "freellmpool" },
+    "ollama": { "baseUrl": "http://127.0.0.1:11434/v1", "models": ["llama3.2:3b", "nemotron-3-super:cloud", "minimax-m3:cloud"] },
+    "openrouter": { "baseUrl": "https://openrouter.ai/api/v1", "model": "anthropic/claude-3.5-sonnet" },
+    "hermes-mcp": { "baseUrl": "http://127.0.0.1:8765", "transport": "sse" },
+    "memory-broker": { "baseUrl": "http://127.0.0.1:8790" },
+    "orchestrator": { "baseUrl": "http://127.0.0.1:8792" }
+  },
+  "routing": {
+    "default": "freellmpool",
+    "fallbacks": ["ollama", "openrouter"],
+    "e2e_mock": true
+  },
+  "updated": "2026-08-21",
+  "notes": "Real-time data: live scrapers at /workflows/phase25*, NEXUS scoring EV=P(close)*commission, GapClaw scan every 2h. E2E mocks these unless LIVE_E2E=1."
+}

@@ -1,0 +1,25 @@
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sahiixx_test
+      POSTGRES_PASSWORD: test_secret
+      POSTGRES_DB: sahiixx_e2e
+    ports: ["5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sahiixx_test"]
+      interval: 2s
+      retries: 10
+
+  redis-test:
+    image: redis:7-alpine
+    ports: ["6380:6379"]
+    profiles: ["ai"]  # ponytail: only start with --profile ai
+
+  qdrant-test:
+    image: qdrant/qdrant:v1.9-alpine
+    ports: ["6333:6333"]
+    profiles: ["ai"]
+
+  # ollama mocked in E2E — real ollama runs on host :11434, no container needed
+  # add --profile ai to spin redis+qdrant when testing RAG/vector paths
