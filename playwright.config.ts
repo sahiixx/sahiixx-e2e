@@ -25,6 +25,7 @@ export default defineConfig({
     { name: 'ai', testMatch: /tests\/ai\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'realtime', testMatch: /tests\/realtime\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'mcp', testMatch: /tests\/mcp\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'lead-machine', testMatch: /tests\/lead-machine\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: [
     {
