@@ -1,6 +1,7 @@
 /**
  * Minimal LLM assertions for E2E — no extra deps.
- * Uses freellmpool (127.0.0.1:8897) if LIVE_E2E=1, otherwise mocked via route interception in tests.
+ * Uses an explicitly configured OpenAI-compatible endpoint when LIVE_E2E=1;
+ * otherwise tests should intercept the route and remain deterministic.
  */
 
 // ponytail: one helper, not a framework
@@ -24,12 +25,20 @@ export async function streamToString(stream: ReadableStream<Uint8Array>): Promis
 
 // real call only when LIVE_E2E=1
 export async function liveChat(prompt: string): Promise<string> {
-  const r = await fetch('http://127.0.0.1:8897/v1/chat/completions', {
+  const baseUrl = process.env.LIVE_MODEL_URL || process.env.FREELLMPOOL_URL;
+  const model = process.env.LIVE_MODEL || process.env.FREELLMPOOL_MODEL;
+  if (!baseUrl || !model) {
+    throw new Error('LIVE_MODEL_URL and LIVE_MODEL are required for live model tests');
+  }
+  const r = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'llm7/codestral-latest', messages: [{ role: 'user', content: prompt }], max_tokens: 256 }),
+    headers: {
+      'Content-Type': 'application/json',
+      ...(process.env.LIVE_MODEL_API_KEY ? { Authorization: `Bearer ${process.env.LIVE_MODEL_API_KEY}` } : {}),
+    },
+    body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 256 }),
   });
-  if (!r.ok) throw new Error(`freellmpool ${r.status}`);
+  if (!r.ok) throw new Error(`live model ${r.status}`);
   const j = await r.json();
   return j.choices?.[0]?.message?.content ?? '';
 }

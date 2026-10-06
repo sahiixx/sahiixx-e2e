@@ -58,14 +58,16 @@ test.describe('Lead Machine — QualificationAgent (contract + pure scorer)', ()
   });
 
   test('optional live OPA / lead endpoint (skips if absent)', async ({ request }) => {
-    // When the real QualificationAgent adapter is registered, this becomes a true E2E.
-    const r = await request.post('/api/opa/lead/qualify', {
+    // The live boundary is explicit. A missing OPA_BASE_URL is a skipped
+    // integration lane, while a configured but broken service fails loudly.
+    const opaBase = process.env.OPA_BASE_URL;
+    if (!opaBase) {
+      test.skip(true, 'Set OPA_BASE_URL to run the live OPA contract');
+    }
+    const r = await request.post(`${opaBase}/api/opa/lead/qualify`, {
       data: SAMPLE_LEAD_CREATED,
       failOnStatusCode: false,
     });
-    if (r.status() === 404 || r.status() === 502) {
-      test.skip(true, 'OPA QualificationAgent endpoint not deployed yet');
-    }
     expect(r.status()).toBe(200);
     const body = await r.json();
     assertLeadQualifiedShape(body);

@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  # Fast path for PRs — chromium + pure Lead Machine contracts
+  # Fast path for PRs — no target services or provider secrets required.
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -18,7 +18,8 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --project=lead-machine --reporter=list
+      - run: npm run check
+      - run: npx playwright test --project=contracts --project=lead-machine --reporter=list
         env:
           BASE_URL: http://localhost:3000
       - if: failure()
@@ -54,18 +55,17 @@ jobs:
       - run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
-        continue-on-error: true
       - run: npm run build
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-        continue-on-error: true
       - run: npx playwright test --project=chromium --project=ai --project=lead-machine
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
           DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/e2e_test
           BASE_URL: http://localhost:3000
           TEST_JWT_TOKEN: ${{ secrets.TEST_JWT_TOKEN }}
+          RUN_DB_SETUP: '1'
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
