@@ -8,8 +8,11 @@
     "test:e2e:ai": "playwright test --project=ai",
     "test:e2e:realtime": "playwright test --project=realtime",
     "test:e2e:lead": "playwright test --project=lead-machine",
-    "test:e2e:smoke": "playwright test --project=chromium --project=lead-machine",
+    "test:e2e:contracts": "playwright test --project=contracts --project=lead-machine",
+    "test:e2e:integration": "playwright test --project=integration",
+    "test:e2e:smoke": "playwright test --project=contracts --project=lead-machine",
     "test:live": "LIVE_E2E=1 playwright test --project=ai --project=realtime",
+    "check": "tsc --noEmit",
     "db:reset:test": "prisma migrate reset --force --skip-seed",
     "eval": "tsx tools/eval-harness.ts"
   },
@@ -20,6 +23,7 @@
     "@types/node": "^20.0.0",
     "bcryptjs": "^2.4.3",
     "tsx": "^4.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "zod": "^3.25.76"
   }
 }

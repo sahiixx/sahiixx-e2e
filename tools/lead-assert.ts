@@ -4,9 +4,14 @@
  */
 
 import type { LeadCreated, LeadQualified } from '../fixtures/lead-machine';
+import { LeadQualifiedSchema } from '../contracts/lead-machine';
 
 export function extractBudget(msg: string): string | null {
-  const m = msg.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(m|million|k|thousand)?/i);
+  const normalized = msg.toLowerCase();
+  // Prefer a value near an explicit budget/value/price marker so bedroom
+  // counts such as "2BR" cannot become a budget signal.
+  const marked = normalized.match(/(?:budget|price|priced|value|worth|around|for)\s*(?:is|of|:)?\s*(?:aed|dh|dhs|dirham)?\s*(\d+(?:\.\d+)?)\s*(m|million|k|thousand)?/i);
+  const m = marked || normalized.match(/(?:aed|dh|dhs|dirham)\s*(\d+(?:\.\d+)?)\s*(m|million|k|thousand)?/i);
   if (!m) return null;
   const n = parseFloat(m[1]);
   const unit = (m[2] || '').toLowerCase();
@@ -84,11 +89,5 @@ export function qualifyLead(payload: LeadCreated): LeadQualified {
 }
 
 export function assertLeadQualifiedShape(q: any) {
-  if (!q || typeof q !== 'object') throw new Error('LeadQualified must be an object');
-  for (const k of ['lead_id', 'score', 'intent', 'timeline', 'decision', 'status', 'next']) {
-    if (!(k in q)) throw new Error(`LeadQualified missing required field: ${k}`);
-  }
-  if (typeof q.score !== 'number' || q.score < 0 || q.score > 100) {
-    throw new Error(`score must be 0-100, got ${q.score}`);
-  }
+  return LeadQualifiedSchema.parse(q);
 }

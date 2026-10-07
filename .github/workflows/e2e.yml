@@ -1,4 +1,5 @@
 name: E2E
+
 on:
   push:
     branches: [main, develop]
@@ -6,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  # Fast path for PRs — chromium + pure Lead Machine contracts
+  # Fast path for PRs — no target services or provider secrets required.
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -18,31 +19,23 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --project=lead-machine --reporter=list
+      - run: npm run check
+      - run: npm run test:e2e:contracts
         env:
-          BASE_URL: http://localhost:3000
+          BASE_URL: http://127.0.0.1:3000
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-report
           path: playwright-report/
 
-  e2e:
+  # The harness verifies externally managed services. Configure repository
+  # variables only in an environment that can reach OPA and sahiixx-bus.
+  service-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     needs: [smoke]
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: e2e_test
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-        ports: ['5432:5432']
-      redis:
-        image: redis:7-alpine
-        ports: ['6379:6379']
+    if: vars.OPA_BASE_URL != '' && vars.BUS_BASE_URL != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,33 +43,23 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx prisma migrate deploy
+      - run: npm run test:e2e:integration
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
-        continue-on-error: true
-      - run: npm run build
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-        continue-on-error: true
-      - run: npx playwright test --project=chromium --project=ai --project=lead-machine
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
-          DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/e2e_test
-          BASE_URL: http://localhost:3000
-          TEST_JWT_TOKEN: ${{ secrets.TEST_JWT_TOKEN }}
+          OPA_BASE_URL: ${{ vars.OPA_BASE_URL }}
+          BUS_BASE_URL: ${{ vars.BUS_BASE_URL }}
+          REQUIRE_LIVE: '1'
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: integration-report
           path: playwright-report/
 
-  # Full AI project on push only (can be expanded to nightly LIVE_E2E later)
+  # Optional provider canary. It runs only when a target application is
+  # configured; model URLs and IDs are never embedded in the repository.
   ai-eval:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && vars.BASE_URL != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -87,7 +70,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --project=ai --reporter=list
         env:
-          BASE_URL: http://localhost:3000
+          BASE_URL: ${{ vars.BASE_URL }}
+          LIVE_E2E: ${{ vars.LIVE_E2E || '0' }}
+          LIVE_MODEL_URL: ${{ vars.LIVE_MODEL_URL }}
+          LIVE_MODEL: ${{ vars.LIVE_MODEL }}
+          LIVE_MODEL_API_KEY: ${{ secrets.LIVE_MODEL_API_KEY }}
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

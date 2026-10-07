@@ -5,7 +5,7 @@ test.afterEach(cleanupTestData);
 
 test.describe('User API', () => {
   test('GET /api/user returns authenticated user', async ({ request }) => {
-    const user = await createTestUser('api-e2e@sahiixx.dev');
+    const user = await createTestUser('api-e2e@sahiixx.dev') as { email: string };
     const r = await request.get('/api/user', {
       headers: { Authorization: `Bearer ${process.env.TEST_JWT_TOKEN}` },
     });
