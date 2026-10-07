@@ -13,7 +13,7 @@ function assertConfigured(name: string, value: string | undefined): asserts valu
 
 test.describe('OPA service boundary', () => {
   test.beforeAll(() => assertConfigured('OPA_BASE_URL', opaBase));
-  test.skip(!opaBase, 'Set OPA_BASE_URL to run service-boundary E2E');
+  test.skip(!opaBase && !requireLive, 'Set OPA_BASE_URL to run service-boundary E2E');
   test.use({ baseURL: opaBase || 'http://127.0.0.1:8082' });
 
   test('capture → qualify → match returns compatible contracts', async ({ request }) => {
@@ -51,7 +51,7 @@ test.describe('OPA service boundary', () => {
 
 test.describe('sahiixx-bus service boundary', () => {
   test.beforeAll(() => assertConfigured('BUS_BASE_URL', busBase));
-  test.skip(!busBase, 'Set BUS_BASE_URL to run bus-boundary E2E');
+  test.skip(!busBase && !requireLive, 'Set BUS_BASE_URL to run bus-boundary E2E');
   test.use({ baseURL: busBase || 'http://127.0.0.1:8090' });
 
   test('health exposes a usable bus and MCP surface', async ({ request }) => {
