@@ -33,6 +33,8 @@ LeadCreated → LeadQualified → LeadMatched
 | UI/product | `npx playwright test --project=chromium` | target `BASE_URL` | browser behavior |
 | AI mocked | `npm run test:e2e:ai` | target `BASE_URL` | deterministic tool/stream behavior |
 | AI live | `LIVE_E2E=1 npm run test:live` | external providers | canary, latency and provider checks |
+| Model matrix | `npm run test:e2e:models` | no network by default | traditional, generative and foundation capability contracts |
+| Model canary | `MODEL_MATRIX_LIVE=1 npm run test:e2e:models` | configured providers | chat, streaming, tools, structured output, embeddings and vision |
 
 `OPA_BASE_URL` and `BUS_BASE_URL` are opt-in. If either is configured, a 404,
 5xx or schema mismatch fails; the suite only skips when the lane was not
@@ -53,6 +55,22 @@ discipline:
 The E2E harness measures contract pass rate, latency, retry count, token/cost
 metadata when provided, approval violations and provider error class. It does
 not treat a benchmark score or an LLM judge as the sole source of truth.
+
+### Model capability matrix
+
+The model matrix keeps capability assertions separate from product UI tests:
+
+| Class | Default implementation | Contracted capabilities | Live transport |
+|---|---|---|---|
+| Traditional | deterministic reference functions | classification, scoring | none |
+| Generative | mocked OpenAI-compatible adapter | chat, SSE streaming, tool calls | `/chat/completions` |
+| Foundation | mocked OpenAI-compatible adapter | JSON schema output, embeddings, vision | `/chat/completions`, `/embeddings` |
+
+Every live capability has its own environment profile. A missing profile skips
+only that capability; a configured profile fails on provider errors, timeouts or
+schema violations. This prevents a healthy chat endpoint from masking a broken
+embedding or vision endpoint. The shared adapter records latency and normalizes
+responses before the application-specific assertions run.
 
 ### 4. Simple, composable agent paths
 
@@ -102,6 +120,10 @@ contracts/
   event-envelope.ts     trace, causation and idempotency envelope
   redaction.ts          artifact-safe diagnostics
 fixtures/               canonical examples and deterministic variants
+tools/model-matrix.ts   provider-neutral generative/foundation adapter
+tools/traditional-model.ts deterministic classification/scoring oracle
+tests/models/            isolated model-class and capability lanes
+```
 
 ## Secrets and environments
 
@@ -112,6 +134,7 @@ fixtures/               canonical examples and deterministic variants
 | `BUS_BASE_URL` | bus integration lane | local environment or CI variable |
 | `MCP_URL` | MCP lane | local environment or CI variable |
 | `FREELLMPOOL_URL`, `OLLAMA_URL` | provider canaries | local environment or CI variable |
+| `MODEL_MATRIX_*_URL`, `MODEL_MATRIX_*_MODEL` | capability-specific model canaries | local environment or CI variable |
 | `TEST_JWT_TOKEN` | authenticated browser lane | CI secret only |
 | provider/API keys | live provider lane | CI secret or local secret manager only |
 
@@ -126,7 +149,9 @@ credentials.
 2. **Integration release candidate:** OPA and bus URLs configured with
    `REQUIRE_LIVE=1`; capture → qualify → match passes schema checks.
 3. **Production canary:** mocked AI suite plus bounded live provider checks;
-   compare latency, cost, error and approval metrics to the previous run.
+   compare latency, cost, error and approval metrics to the previous run. Run
+   the generative and foundation capabilities independently so one provider
+   does not hide a failure in another capability.
 4. **Promote:** no unresolved contract, tenant-isolation, consent, idempotency
    or redaction failures.
 
