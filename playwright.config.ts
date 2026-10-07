@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const appCommand = process.env.APP_COMMAND;
 const baseURL = process.env.BASE_URL || 'http://127.0.0.1:3000';
-const uiTestIgnore = [/tests\/(contracts|integration|lead-machine|ai|realtime|mcp)\//];
+const uiTestIgnore = [/tests\/(contracts|integration|lead-machine|ai|realtime|mcp|models)\//];
 
 export default defineConfig({
   testDir: './tests',
@@ -36,6 +36,9 @@ export default defineConfig({
     { name: 'lead-machine', testMatch: /tests\/lead-machine\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'contracts', testMatch: /tests\/contracts\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'integration', testMatch: /tests\/integration\/.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'traditional-models', testMatch: /tests\/models\/traditional-model\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'generative-models', testMatch: /tests\/models\/generative-model\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'foundation-models', testMatch: /tests\/models\/foundation-model\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
   ],
   // The harness does not guess how to start a target application. Set
   // APP_COMMAND when a suite owns the target process; otherwise BASE_URL,

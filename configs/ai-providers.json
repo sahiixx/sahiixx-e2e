@@ -7,6 +7,27 @@
     "memory-broker": { "baseUrlEnv": "MEMORY_BROKER_URL" },
     "orchestrator": { "baseUrlEnv": "ORCHESTRATOR_URL" }
   },
+  "modelMatrix": {
+    "traditional": {
+      "kind": "deterministic",
+      "capabilities": ["classification", "scoring"],
+      "environment": []
+    },
+    "generative": {
+      "kind": "chat-completion",
+      "capabilities": ["chat", "streaming", "tool_call"],
+      "baseUrlEnv": "MODEL_MATRIX_GENERATIVE_URL",
+      "modelEnv": "MODEL_MATRIX_GENERATIVE_MODEL",
+      "apiKeyEnv": "MODEL_MATRIX_GENERATIVE_API_KEY"
+    },
+    "foundation": {
+      "kind": "capability-model",
+      "capabilities": ["structured_output", "embeddings", "vision"],
+      "baseUrlEnv": ["MODEL_MATRIX_FOUNDATION_URL", "MODEL_MATRIX_EMBEDDING_URL", "MODEL_MATRIX_VISION_URL"],
+      "modelEnv": ["MODEL_MATRIX_FOUNDATION_MODEL", "MODEL_MATRIX_EMBEDDING_MODEL", "MODEL_MATRIX_VISION_MODEL"],
+      "apiKeyEnv": ["MODEL_MATRIX_FOUNDATION_API_KEY", "MODEL_MATRIX_EMBEDDING_API_KEY", "MODEL_MATRIX_VISION_API_KEY"]
+    }
+  },
   "routing": {
     "default": "primary",
     "fallbacks": ["ollama", "fallback"],

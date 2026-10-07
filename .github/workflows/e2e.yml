@@ -54,6 +54,69 @@ jobs:
           name: integration-report
           path: playwright-report/
 
+  # Always-on, network-free model capability matrix. The mock transport tests
+  # prove request/response contracts without depending on a provider.
+  model-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [smoke]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:models
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-matrix-report
+          path: playwright-report/
+
+  # Optional live capability canary. Each missing capability profile skips its
+  # own live test; a configured endpoint fails on transport or contract errors.
+  model-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [model-matrix]
+    if: github.event_name == 'push' && (vars.MODEL_MATRIX_GENERATIVE_URL != '' || vars.MODEL_MATRIX_FOUNDATION_URL != '' || vars.MODEL_MATRIX_EMBEDDING_URL != '' || vars.MODEL_MATRIX_VISION_URL != '')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:models
+        env:
+          MODEL_MATRIX_LIVE: '1'
+          MODEL_MATRIX_TIMEOUT_MS: ${{ vars.MODEL_MATRIX_TIMEOUT_MS || '15000' }}
+          MODEL_MATRIX_MAX_LATENCY_MS: ${{ vars.MODEL_MATRIX_MAX_LATENCY_MS || '15000' }}
+          MODEL_MATRIX_GENERATIVE_PROVIDER: ${{ vars.MODEL_MATRIX_GENERATIVE_PROVIDER }}
+          MODEL_MATRIX_GENERATIVE_URL: ${{ vars.MODEL_MATRIX_GENERATIVE_URL }}
+          MODEL_MATRIX_GENERATIVE_MODEL: ${{ vars.MODEL_MATRIX_GENERATIVE_MODEL }}
+          MODEL_MATRIX_GENERATIVE_API_KEY: ${{ secrets.MODEL_MATRIX_GENERATIVE_API_KEY }}
+          MODEL_MATRIX_FOUNDATION_PROVIDER: ${{ vars.MODEL_MATRIX_FOUNDATION_PROVIDER }}
+          MODEL_MATRIX_FOUNDATION_URL: ${{ vars.MODEL_MATRIX_FOUNDATION_URL }}
+          MODEL_MATRIX_FOUNDATION_MODEL: ${{ vars.MODEL_MATRIX_FOUNDATION_MODEL }}
+          MODEL_MATRIX_FOUNDATION_API_KEY: ${{ secrets.MODEL_MATRIX_FOUNDATION_API_KEY }}
+          MODEL_MATRIX_EMBEDDING_PROVIDER: ${{ vars.MODEL_MATRIX_EMBEDDING_PROVIDER }}
+          MODEL_MATRIX_EMBEDDING_URL: ${{ vars.MODEL_MATRIX_EMBEDDING_URL }}
+          MODEL_MATRIX_EMBEDDING_MODEL: ${{ vars.MODEL_MATRIX_EMBEDDING_MODEL }}
+          MODEL_MATRIX_EMBEDDING_API_KEY: ${{ secrets.MODEL_MATRIX_EMBEDDING_API_KEY }}
+          MODEL_MATRIX_VISION_PROVIDER: ${{ vars.MODEL_MATRIX_VISION_PROVIDER }}
+          MODEL_MATRIX_VISION_URL: ${{ vars.MODEL_MATRIX_VISION_URL }}
+          MODEL_MATRIX_VISION_MODEL: ${{ vars.MODEL_MATRIX_VISION_MODEL }}
+          MODEL_MATRIX_VISION_API_KEY: ${{ secrets.MODEL_MATRIX_VISION_API_KEY }}
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-canary-report
+          path: playwright-report/
+
   # Optional provider canary. It runs only when a target application is
   # configured; model URLs and IDs are never embedded in the repository.
   ai-eval:
